@@ -37,12 +37,12 @@ Clone the repository and make sure that the folder structure is as follows:
 │   ├── testing.py
 │   └── utils.py
 ├── config.yaml
-├── README.md
-└── requirements.txt
-``` 
-Then nstall the required packages in your environment using pip: 
+├── pyproject.toml
+└── README.md
 ```
-pip install -r requirements.txt
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and then sync the dependencies:
+```
+uv sync
 ```
 
 ### Configuration file
@@ -72,9 +72,9 @@ record_loss: 1        # Whether to record the loss during training
 ### Execute
 Depending on the desired action, the following files can be executed:
 
-- The UI can be executed by running the ``boards/ui.py`` file. This allows to play against the selected engine (AlphaZero, Random, Optimal...).
-- The training of the neural networks can be executed by running the ``alpha_zero/train.py`` file. This will train the neural networks for the selected number of iterations according to the configuration
-- The evaluation of the performance can be executed by running the ``testing.py`` file. This will play the selected number of games against the selected opponent and will print the results.
+- The UI can be executed by running ``uv run python -m src.boards.ui``. This allows to play against the selected engine (AlphaZero, Random, Optimal...).
+- The training of the neural networks can be executed by running ``uv run python -m src.alpha_zero.train``. This will train the neural networks for the selected number of iterations according to the configuration.
+- The evaluation of the performance can be executed by running ``uv run python -m src.testing``. This will play the selected number of games against the selected opponent and will print the results.
 
 The UI is implemented in PyGame and looks as follows:
 

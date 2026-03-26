@@ -1,6 +1,8 @@
 # Loss records file
 modelsloss.txt
 
+# Virtual environment
+.venv/
 
 # Default ignored files
 /shelf/
