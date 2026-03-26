@@ -1,6 +1,6 @@
 from src.alpha_zero.neural_net import NNWrapper
 from src.boards.bitboard import ConnectGameBitboard
-from src.utils import Agent, Game
+from src.utils import Agent
 
 
 class AlphaAgent(Agent):
@@ -9,7 +9,6 @@ class AlphaAgent(Agent):
     """
 
     def __init__(self):
-        super().__init__()
         self.game = ConnectGameBitboard()
 
         self.net = NNWrapper(self.game)

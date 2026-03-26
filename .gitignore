@@ -4,6 +4,9 @@ modelsloss.txt
 # Virtual environment
 .venv/
 
+# Solver cache
+/cache/
+
 # Default ignored files
 /shelf/
 /workspace.xml
@@ -12,3 +15,5 @@ modelsloss.txt
 # Datasource local storage ignored files
 /dataSources/
 /dataSources.local.xml
+
+__pycache__

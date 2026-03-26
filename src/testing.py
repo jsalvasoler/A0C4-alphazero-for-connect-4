@@ -1,6 +1,6 @@
 from src.boards.bitboard import ConnectGameBitboard
 from src.boards.classic_board import ConnectGameClassicBoard
-from src.utils import Agent
+from src.utils import Agent, SolverAgent
 
 from tqdm import tqdm
 
@@ -11,14 +11,16 @@ class TestEnvironment:
     """
     This class tests the performance of two agents against each other.
 
+    Accuracy is computed automatically when at least one agent is an SolverAgent,
+    since it already fetches optimal evaluations from the online solver.
+
     Args:
         agent_1: An object containing the first agent.
         agent_2: An object containing the second agent.
         n_games: An integer representing the number of games to play.
         bitboard: A boolean representing whether to use bitboard or classic board.
-        calculate_accuracy: A boolean representing whether to calculate the accuracy of the agents.
     """
-    def __init__(self, agent_1: Agent, agent_2: Agent, n_games=1000, bitboard=True, calculate_accuracy=False):
+    def __init__(self, agent_1: Agent, agent_2: Agent, n_games=1000, bitboard=True):
         self.agent_1 = agent_1
         self.agent_2 = agent_2
 
@@ -27,7 +29,9 @@ class TestEnvironment:
         self.n_draws = 0
 
         self.bitboard = bitboard
-        self.calculate_accuracy = calculate_accuracy
+
+        # Use whichever agent is a SolverAgent to evaluate move accuracy for both
+        self._solver = next((a for a in (agent_1, agent_2) if isinstance(a, SolverAgent)), None)
 
     def initialize_board(self):
         """
@@ -55,8 +59,16 @@ class TestEnvironment:
 
         print(f"\n\n -- Results --")
         win_pct = round(self.n_wins / self.n_games * 100, 2)
-        print(f"Agent 1 wins {self.n_wins}/{self.n_games} ({win_pct}%) with an accuracy of {0.5 * move_acc_1_1 + 0.5 * move_acc_1_2}")
-        print(f"Agent 2 wins {self.n_games - self.n_wins - self.n_draws}/{self.n_games} ({100 - win_pct}%) with an accuracy of {0.5 * move_acc_2_1 + 0.5 * move_acc_2_2}")
+        loss_pct = round((self.n_games - self.n_wins - self.n_draws) / self.n_games * 100, 2)
+        a1_line = f"Agent 1 wins {self.n_wins}/{self.n_games} ({win_pct}%)"
+        a2_line = f"Agent 2 wins {self.n_games - self.n_wins - self.n_draws}/{self.n_games} ({loss_pct}%)"
+        if self._solver:
+            avg_acc_1 = 0.5 * (move_acc_1_1 or 0) + 0.5 * (move_acc_1_2 or 0)
+            avg_acc_2 = 0.5 * (move_acc_2_1 or 0) + 0.5 * (move_acc_2_2 or 0)
+            a1_line += f" with an accuracy of {avg_acc_1:.4f}"
+            a2_line += f" with an accuracy of {avg_acc_2:.4f}"
+        print(a1_line)
+        print(a2_line)
         print(f"Draws: {self.n_draws}\n")
 
     def run_batch(self, n_games, agent_1_starts=True):
@@ -84,12 +96,12 @@ class TestEnvironment:
             while not is_over:
                 if turn % 2 == x:
                     action = self.agent_1.get_action(game)
-                    if self.calculate_accuracy:
-                        move_acc_1.append(self.agent_1.get_action_accuracy(game, action))
+                    if self._solver:
+                        move_acc_1.append(self._solver.get_action_accuracy(game, action))
                 else:
                     action = self.agent_2.get_action(game)
-                    if self.calculate_accuracy:
-                        move_acc_2.append(self.agent_2.get_action_accuracy(game, action))
+                    if self._solver:
+                        move_acc_2.append(self._solver.get_action_accuracy(game, action))
                 is_over = game.step(action)
                 turn += 1
 
@@ -98,7 +110,9 @@ class TestEnvironment:
                 wins += 1
             elif winner == 0:
                 draws += 1
-        return wins, draws, np.mean(move_acc_1), np.mean(move_acc_2)
+        acc_1 = np.mean(move_acc_1) if move_acc_1 else None
+        acc_2 = np.mean(move_acc_2) if move_acc_2 else None
+        return wins, draws, acc_1, acc_2
 
 
 if __name__ == "__main__":
@@ -112,7 +126,7 @@ if __name__ == "__main__":
 
     agent_1 = AlphaAgent()
     agent_2 = RandomAgent()
-    testing = TestEnvironment(agent_1, agent_2, n_games=50, bitboard=True, calculate_accuracy=True)
+    testing = TestEnvironment(agent_1, agent_2, n_games=50, bitboard=True)
     testing.run()
 
     profiler.stop()

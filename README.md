@@ -69,12 +69,25 @@ resnet_blocks: 5      # Number of residual blocks in the ResNet
 record_loss: 1        # Whether to record the loss during training
 ```
 
-### Execute
-Depending on the desired action, the following files can be executed:
+### Usage
 
-- The UI can be executed by running ``uv run python -m src.boards.ui``. This allows to play against the selected engine (AlphaZero, Random, Optimal...).
-- The training of the neural networks can be executed by running ``uv run python -m src.alpha_zero.train``. This will train the neural networks for the selected number of iterations according to the configuration.
-- The evaluation of the performance can be executed by running ``uv run python -m src.testing``. This will play the selected number of games against the selected opponent and will print the results.
+All commands go through the CLI (`src/cli.py`):
+
+```bash
+# Play against an agent in the PyGame UI
+uv run python -m src.cli play --agent random    # random moves
+uv run python -m src.cli play --agent optimal   # perfect play (online solver)
+uv run python -m src.cli play --agent alpha     # trained AlphaZero model
+
+# Train the AlphaZero neural network (uses config.yaml)
+uv run python -m src.cli train
+
+# Evaluate agents against each other
+uv run python -m src.cli test --agent1 alpha --agent2 random --games 100
+uv run python -m src.cli test --agent1 alpha --agent2 optimal --games 50
+```
+
+See `run.sh` for more example commands.
 
 The UI is implemented in PyGame and looks as follows:
 

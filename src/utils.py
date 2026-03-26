@@ -44,17 +44,7 @@ class Game(ABC):
         pass
 
 
-class Agent:
-    def __init__(self):
-        self._base_url = 'https://connect4.gamesolver.org/solve?pos='
-        self._headers = {'User-Agent': 'Mozilla/5.0'}
-        self._session = requests.Session()
-
-        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        cache_dir = os.path.join(root, 'cache')
-        self._cache = shelve.open(f'{cache_dir}/cache.db', writeback=True)
-        self._cache_size = os.path.getsize(f'{cache_dir}/cache.db.dat')
-
+class Agent(ABC):
     @abstractmethod
     def get_action(self, game: Game):
         pass
@@ -63,53 +53,51 @@ class Agent:
     def get_priors(self, game: Game):
         pass
 
+
+class SolverAgent(Agent):
+    """Agent that has access to the online Connect 4 solver for optimal evaluations."""
+
+    _BASE_URL = 'https://connect4.gamesolver.org/solve?pos='
+    _HEADERS = {'User-Agent': 'Mozilla/5.0'}
+    _MAX_CACHE_BYTES = 250 * 1024 * 1024
+
+    def __init__(self):
+        self._session = requests.Session()
+
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        cache_dir = os.path.join(root, 'cache')
+        os.makedirs(cache_dir, exist_ok=True)
+        self._cache = shelve.open(os.path.join(cache_dir, 'cache.db'))
+
+    def __del__(self):
+        if hasattr(self, '_cache'):
+            self._cache.close()
+
     def get_optimal_evaluations(self, game) -> list:
-        """
-        Get optimal evaluations for the given game state.
-
-        Args:
-            game: Game object.
-
-        Returns:
-            List of optimal evaluations for each action.
-        """
         key = "".join([str(s + 1) for s in game.history])
         if key in self._cache:
-            if len(self._cache[key]) != 7:
-                del self._cache[key]
-                return self.get_optimal_evaluations(game)
-            return self._cache[key]
+            value = self._cache[key]
+            if len(value) == 7:
+                return value
+            del self._cache[key]
 
-        url = f'{self._base_url}{key}'
-        response = self._session.get(url, headers=self._headers)
-        if response.status_code != 200:
-            raise Exception(f"Error: {response.status_code}")
+        url = f'{self._BASE_URL}{key}'
+        response = self._session.get(url, headers=self._HEADERS)
+        response.raise_for_status()
         scores = response.json()['score']
 
-        if self._cache_size < 250 * 1024 * 1024:
-            self._cache[key] = scores
+        self._cache[key] = scores
+        self._cache.sync()
 
         return scores
 
     def get_action_accuracy(self, game, action) -> float:
-        """
-        Get the accuracy of a given action.
-        It is simply 1 if the action is optimal, 0 otherwise.
-
-        Args:
-            game: Game object.
-            action: Action to get the accuracy of.
-
-        Returns:
-            Accuracy of the given action.
-        """
         evaluations = self.get_optimal_evaluations(game)
         if evaluations[action] == 100:
             return 0
         x = evaluations[action]
-        while 100 in evaluations:
-            evaluations.remove(100)
-        return 1 if x == max(evaluations) else 0
+        valid_evals = [e for e in evaluations if e != 100]
+        return 1 if x == max(valid_evals) else 0
 
 
 class Config:
