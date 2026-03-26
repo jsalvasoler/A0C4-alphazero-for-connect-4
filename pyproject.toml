@@ -2,13 +2,13 @@
 name = "a0c4"
 version = "0.1.0"
 description = "AlphaZero for Connect 4"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
-    "numpy>=1.23.5",
+    "numpy>=2.4.3",
     "pyinstrument>=4.6.0",
-    "torch>=2.1.2",
+    "torch>=2.11.0",
     "pygame>=2.0.0",
-    "tqdm>=4.0.0",
+    "tqdm>=4.67.0",
     "pyyaml>=6.0",
     "requests>=2.0.0",
 ]

@@ -1,5 +1,4 @@
-from mcts import TreeNode
-
+from src.alpha_zero.mcts import TreeNode
 from src.boards.bitboard import ConnectGameBitboard as Game
 from src.utils import Config
 
