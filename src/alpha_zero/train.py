@@ -2,12 +2,11 @@ from random import shuffle
 
 from pyinstrument import Profiler
 
-from src.alpha_zero.neural_net import NNWrapper
-from src.utils import Config
-from src.alpha_zero.mcts import MonteCarloTreeSearch, TreeNode
 from src.alpha_zero.eval import Evaluate
+from src.alpha_zero.mcts import MonteCarloTreeSearch, TreeNode
+from src.alpha_zero.neural_net import NNWrapper
 from src.boards.bitboard import ConnectGameBitboard as Game
-
+from src.utils import Config
 
 configuration = Config()
 
@@ -21,6 +20,7 @@ class Train:
         net: An object containing the neural network.
         eval_net: An object containing the evaluation neural network.
     """
+
     def __init__(self, game: Game, net):
         self.game = game
         self.net = net
@@ -57,11 +57,12 @@ class Train:
             evaluator = Evaluate(current_mcts=current_mcts, eval_mcts=eval_mcts)
             wins, losses = evaluator.evaluate()
 
-            print(f'wins: {wins}, draws: {configuration.num_eval_games - wins - losses}, losses: {losses}')
+            draws = configuration.num_eval_games - wins - losses
+            print(f"wins: {wins}, draws: {draws}, losses: {losses}")
             win_rate = wins / configuration.num_eval_games
-            print(f'win rate: {win_rate}')
+            print(f"win rate: {win_rate}")
 
-            # If the win rate is > 50%, we save it as best model. Otherwise, also save it in case we don't have one yet
+            # Save as best model if win rate exceeds threshold
             if win_rate > configuration.eval_win_rate:
                 # Save current model as the best model.
                 print("New model saved as best model.")
@@ -100,7 +101,9 @@ class Train:
                 best_child = mcts.search(game, node, configuration.temp_final)
 
             # Store state, prob and v for training.
-            self_play_data.append([game.get_state_representation().copy(), best_child.parent.child_psas, 0])
+            self_play_data.append(
+                [game.get_state_representation().copy(), best_child.parent.child_psas, 0]
+            )
 
             action = best_child.action
             game_over = game.step(action)  # Play the child node's action.
@@ -120,7 +123,7 @@ class Train:
         mcts.print_stats()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     profiler = Profiler()
     profiler.start()
 

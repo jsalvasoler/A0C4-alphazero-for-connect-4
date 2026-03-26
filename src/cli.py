@@ -14,7 +14,7 @@ import sys
 
 
 def make_agent(name: str):
-    from src.agents.agent import RandomAgent, OptimalAgent
+    from src.agents.agent import OptimalAgent, RandomAgent
     from src.agents.alpha_agent import AlphaAgent
 
     agents = {
@@ -64,19 +64,33 @@ def main():
 
     # play
     play_parser = subparsers.add_parser("play", help="Play against an agent in the UI")
-    play_parser.add_argument("--agent", default="optimal", choices=["random", "optimal", "alpha"],
-                             help="Agent to play against (default: optimal)")
+    play_parser.add_argument(
+        "--agent",
+        default="optimal",
+        choices=["random", "optimal", "alpha"],
+        help="Agent to play against (default: optimal)",
+    )
 
     # train
     subparsers.add_parser("train", help="Train the AlphaZero neural network")
 
     # test
     test_parser = subparsers.add_parser("test", help="Pit two agents against each other")
-    test_parser.add_argument("--agent1", default="alpha", choices=["random", "optimal", "alpha"],
-                             help="First agent (default: alpha)")
-    test_parser.add_argument("--agent2", default="random", choices=["random", "optimal", "alpha"],
-                             help="Second agent (default: random)")
-    test_parser.add_argument("--games", type=int, default=100, help="Number of games (default: 100)")
+    test_parser.add_argument(
+        "--agent1",
+        default="alpha",
+        choices=["random", "optimal", "alpha"],
+        help="First agent (default: alpha)",
+    )
+    test_parser.add_argument(
+        "--agent2",
+        default="random",
+        choices=["random", "optimal", "alpha"],
+        help="Second agent (default: random)",
+    )
+    test_parser.add_argument(
+        "--games", type=int, default=100, help="Number of games (default: 100)"
+    )
 
     args = parser.parse_args()
 

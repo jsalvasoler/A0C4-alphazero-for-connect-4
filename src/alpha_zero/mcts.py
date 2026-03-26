@@ -1,11 +1,13 @@
 from math import sqrt
+
 import numpy as np
+
 from src.utils import Config
 
 configuration = Config()
 
 
-class TreeNode(object):
+class TreeNode:
     """
     Represents a board state and stores statistics for actions at that state.
 
@@ -49,7 +51,10 @@ class TreeNode(object):
         Returns:
             A child TreeNode which is the most promising according to PUCT.
         """
-        return max(self.children, key=lambda c: c.Qsa + c.Psa * configuration.c_puct * (sqrt(self.Nsa) / (1 + c.Nsa)))
+        return max(
+            self.children,
+            key=lambda c: c.Qsa + c.Psa * configuration.c_puct * (sqrt(self.Nsa) / (1 + c.Nsa)),
+        )
 
     def expand_node(self, game, psa_vector):
         """
@@ -78,7 +83,7 @@ class TreeNode(object):
         self.Qsa = self.Wsa / self.Nsa
 
 
-class MonteCarloTreeSearch(object):
+class MonteCarloTreeSearch:
     """Represents a Monte Carlo Tree Search Algorithm.
 
     Attributes:
@@ -110,7 +115,7 @@ class MonteCarloTreeSearch(object):
         self.root = node
         self.game = game
 
-        for i in range(configuration.num_mcts_sims):
+        for _ in range(configuration.num_mcts_sims):
             node = self.root
             game = self.game.clone()  # Create a fresh clone for each loop.
 
@@ -153,8 +158,8 @@ class MonteCarloTreeSearch(object):
         for idx, child in enumerate(self.root.children):
             temperature_exponent = int(1 / temperature)
 
-            if child.Nsa ** temperature_exponent > highest_nsa:
-                highest_nsa = child.Nsa ** temperature_exponent
+            if child.Nsa**temperature_exponent > highest_nsa:
+                highest_nsa = child.Nsa**temperature_exponent
                 highest_index = idx
 
         return self.root.children[highest_index]
@@ -179,7 +184,8 @@ class MonteCarloTreeSearch(object):
 
         for idx, psa in enumerate(psa_vector):
             noisy_psa_vector.append(
-                (1 - configuration.epsilon) * psa + configuration.epsilon * dirichlet_list[idx])
+                (1 - configuration.epsilon) * psa + configuration.epsilon * dirichlet_list[idx]
+            )
 
         return noisy_psa_vector
 

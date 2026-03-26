@@ -1,12 +1,12 @@
-from src.utils import Config
 from mcts import TreeNode
-from src.boards.bitboard import ConnectGameBitboard as Game
 
+from src.boards.bitboard import ConnectGameBitboard as Game
+from src.utils import Config
 
 configuration = Config()
 
 
-class Evaluate(object):
+class Evaluate:
     """Evaluate the current network against the evaluation network
 
     Attributes:

@@ -1,9 +1,8 @@
-from abc import ABC, abstractmethod
-from typing import Union
-import requests
 import os
 import shelve
+from abc import ABC, abstractmethod
 
+import requests
 import yaml
 
 
@@ -11,9 +10,6 @@ class Game(ABC):
     """
     Abstract class for a game
     """
-
-    def __init__(self):
-        pass
 
     @abstractmethod
     def reset(self):
@@ -32,7 +28,7 @@ class Game(ABC):
         pass
 
     @abstractmethod
-    def check_winner(self) -> Union[int, None]:
+    def check_winner(self) -> int | None:
         """
         Check if there is a winner.
         Return:
@@ -57,20 +53,20 @@ class Agent(ABC):
 class SolverAgent(Agent):
     """Agent that has access to the online Connect 4 solver for optimal evaluations."""
 
-    _BASE_URL = 'https://connect4.gamesolver.org/solve?pos='
-    _HEADERS = {'User-Agent': 'Mozilla/5.0'}
+    _BASE_URL = "https://connect4.gamesolver.org/solve?pos="
+    _HEADERS = {"User-Agent": "Mozilla/5.0"}
     _MAX_CACHE_BYTES = 250 * 1024 * 1024
 
     def __init__(self):
         self._session = requests.Session()
 
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        cache_dir = os.path.join(root, 'cache')
+        cache_dir = os.path.join(root, "cache")
         os.makedirs(cache_dir, exist_ok=True)
-        self._cache = shelve.open(os.path.join(cache_dir, 'cache.db'))
+        self._cache = shelve.open(os.path.join(cache_dir, "cache.db"))
 
     def __del__(self):
-        if hasattr(self, '_cache'):
+        if hasattr(self, "_cache"):
             self._cache.close()
 
     def get_optimal_evaluations(self, game) -> list:
@@ -81,10 +77,10 @@ class SolverAgent(Agent):
                 return value
             del self._cache[key]
 
-        url = f'{self._BASE_URL}{key}'
+        url = f"{self._BASE_URL}{key}"
         response = self._session.get(url, headers=self._HEADERS)
         response.raise_for_status()
-        scores = response.json()['score']
+        scores = response.json()["score"]
 
         self._cache[key] = scores
         self._cache.sync()
@@ -104,15 +100,16 @@ class Config:
     """
     Configuration object for the project.
     """
+
     def __init__(self):
         # Read config from config.yaml.
         self.__root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self._config_path = os.path.join(self.__root, 'config.yaml')
+        self._config_path = os.path.join(self.__root, "config.yaml")
 
-        with open(self._config_path, 'r') as f:
+        with open(self._config_path) as f:
             self._config = yaml.safe_load(f)
 
-        self.model_dir_path = os.path.join(self.__root, 'models')
+        self.model_dir_path = os.path.join(self.__root, "models")
 
     def __getattr__(self, item):
         # if the item is already an attribute of self, return it
@@ -122,5 +119,5 @@ class Config:
         # if the item exists as a key in self._config, return it
         try:
             return self._config[item]
-        except KeyError:
-            raise AttributeError(f"'Config' object has no attribute '{item}'")
+        except KeyError as err:
+            raise AttributeError(f"'Config' object has no attribute '{item}'") from err

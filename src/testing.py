@@ -1,10 +1,9 @@
+import numpy as np
+from tqdm import tqdm
+
 from src.boards.bitboard import ConnectGameBitboard
 from src.boards.classic_board import ConnectGameClassicBoard
 from src.utils import Agent, SolverAgent
-
-from tqdm import tqdm
-
-import numpy as np
 
 
 class TestEnvironment:
@@ -20,6 +19,7 @@ class TestEnvironment:
         n_games: An integer representing the number of games to play.
         bitboard: A boolean representing whether to use bitboard or classic board.
     """
+
     def __init__(self, agent_1: Agent, agent_2: Agent, n_games=1000, bitboard=True):
         self.agent_1 = agent_1
         self.agent_2 = agent_2
@@ -49,19 +49,25 @@ class TestEnvironment:
         """
         Run the tests. Run half the games with agent 1 starting, half with agent 2 starting
         """
-        print(f'Running first batch: {self.n_games // 2} games with agent 1 starting')
-        wins_1, draws_1, move_acc_1_1, move_acc_2_1 = self.run_batch(self.n_games // 2, agent_1_starts=True)
-        print(f'Running second batch: {self.n_games // 2} games with agent 2 starting')
-        wins_2, draws_2, move_acc_1_2, move_acc_2_2 = self.run_batch(self.n_games // 2, agent_1_starts=False)
+        print(f"Running first batch: {self.n_games // 2} games with agent 1 starting")
+        wins_1, draws_1, move_acc_1_1, move_acc_2_1 = self.run_batch(
+            self.n_games // 2, agent_1_starts=True
+        )
+        print(f"Running second batch: {self.n_games // 2} games with agent 2 starting")
+        wins_2, draws_2, move_acc_1_2, move_acc_2_2 = self.run_batch(
+            self.n_games // 2, agent_1_starts=False
+        )
 
         self.n_wins = wins_1 + (self.n_games // 2 - wins_2 - draws_2)
         self.n_draws = draws_1 + draws_2
 
-        print(f"\n\n -- Results --")
+        print("\n\n -- Results --")
         win_pct = round(self.n_wins / self.n_games * 100, 2)
         loss_pct = round((self.n_games - self.n_wins - self.n_draws) / self.n_games * 100, 2)
         a1_line = f"Agent 1 wins {self.n_wins}/{self.n_games} ({win_pct}%)"
-        a2_line = f"Agent 2 wins {self.n_games - self.n_wins - self.n_draws}/{self.n_games} ({loss_pct}%)"
+        a2_line = (
+            f"Agent 2 wins {self.n_games - self.n_wins - self.n_draws}/{self.n_games} ({loss_pct}%)"
+        )
         if self._solver:
             avg_acc_1 = 0.5 * (move_acc_1_1 or 0) + 0.5 * (move_acc_1_2 or 0)
             avg_acc_2 = 0.5 * (move_acc_2_1 or 0) + 0.5 * (move_acc_2_2 or 0)
@@ -116,10 +122,10 @@ class TestEnvironment:
 
 
 if __name__ == "__main__":
-    from src.agents.agent import OptimalAgent, RandomAgent
-    from src.agents.alpha_agent import AlphaAgent
-
     from pyinstrument import Profiler
+
+    from src.agents.agent import RandomAgent
+    from src.agents.alpha_agent import AlphaAgent
 
     profiler = Profiler()
     profiler.start()

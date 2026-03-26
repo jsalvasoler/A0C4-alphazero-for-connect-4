@@ -4,15 +4,13 @@ from src.utils import Agent
 
 
 class AlphaAgent(Agent):
-    """
-    This agent uses the best neural network found using the AlphaZero training step to get the most desired action.
-    """
+    """Uses the best AlphaZero neural network to select actions."""
 
     def __init__(self):
         self.game = ConnectGameBitboard()
 
         self.net = NNWrapper(self.game)
-        self.net.load_model(filename='best_model')
+        self.net.load_model(filename="best_model")
 
     def get_action(self, game: ConnectGameBitboard):
         """

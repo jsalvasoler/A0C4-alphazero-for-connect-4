@@ -9,7 +9,9 @@ class ConnectGameClassicBoard(Game):
         self.size = (6, 7)
         self.in_a_row = 4
         self.board = None
-        self.turn = None  # can be 1 and -1. The next piece to be placed is going to be of sign self.turn.
+        self.turn = (
+            None  # can be 1 and -1. The next piece to be placed is going to be of sign self.turn.
+        )
         self.winner = None  # can be 1, -1, and 0 (draw). None if the game is not over.
 
         self.reset()
@@ -30,7 +32,7 @@ class ConnectGameClassicBoard(Game):
                 break
 
         self.winner = self.check_winner()
-        self.turn *= -1     # switch turn
+        self.turn *= -1  # switch turn
 
         # Return True if the game is over
         return self.winner is not None
@@ -41,21 +43,26 @@ class ConnectGameClassicBoard(Game):
         # Check horizontal
         for i in range(self.size[0]):
             for j in range(self.size[1] - self.in_a_row + 1):
-                if np.all(self.board[i, j:j+self.in_a_row] == self.turn):
+                if np.all(self.board[i, j : j + self.in_a_row] == self.turn):
                     return self.turn
 
         # Check vertical
         for i in range(self.size[0] - self.in_a_row + 1):
             for j in range(self.size[1]):
-                if np.all(self.board[i:i+self.in_a_row, j] == self.turn):
+                if np.all(self.board[i : i + self.in_a_row, j] == self.turn):
                     return self.turn
 
         # Check diagonal
         for i in range(self.size[0] - self.in_a_row + 1):
             for j in range(self.size[1] - self.in_a_row + 1):
-                if np.all(np.diag(self.board[i:i+self.in_a_row, j:j+self.in_a_row]) == self.turn):
+                if np.all(
+                    np.diag(self.board[i : i + self.in_a_row, j : j + self.in_a_row]) == self.turn
+                ):
                     return self.turn
-                if np.all(np.diag(np.fliplr(self.board[i:i+self.in_a_row, j:j+self.in_a_row])) == self.turn):
+                if np.all(
+                    np.diag(np.fliplr(self.board[i : i + self.in_a_row, j : j + self.in_a_row]))
+                    == self.turn
+                ):
                     return self.turn
 
         # Check draw
@@ -88,7 +95,7 @@ class ConnectGameClassicBoard(Game):
 
 if __name__ == "__main__":
     from src.boards.bitboard import ConnectGameBitboard
-    # board = ConnectGameClassicBoard()
+
     board = ConnectGameBitboard()
     print(board)
 

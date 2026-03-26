@@ -1,5 +1,4 @@
 from copy import deepcopy as copy
-from typing import Union
 
 import numpy as np
 
@@ -11,6 +10,7 @@ class ConnectGameBitboard(Game):
     Connect 4 game representation using bitboard for fast move generation and evaluation.
     It is an implementation of the Game interface.
     """
+
     def __init__(self, width=7, height=6):
         super().__init__()
         self.w = width
@@ -52,15 +52,15 @@ class ConnectGameBitboard(Game):
             for j in range(self.w):  # col
                 pos = 1 << (self.h + 1) * j + i
                 if self.board_state[0] & pos == pos:
-                    row_str += 'x '
+                    row_str += "x "
                 elif self.board_state[1] & pos == pos:
-                    row_str += 'o '
+                    row_str += "o "
                 else:
-                    row_str += '. '
+                    row_str += ". "
             state.append(row_str)
         state.append("  " + " ".join([str(i) for i in range(self.w)]))
         state.reverse()  # inverted orientation more readable
-        return '\n'.join(state)
+        return "\n".join(state)
 
     def get_current_player(self):
         """
@@ -101,9 +101,11 @@ class ConnectGameBitboard(Game):
         """
         player = self.get_current_player()
         move = 1 << self.col_heights[col]
-        assert self.can_play(col), f'Column {col} is full'
+        assert self.can_play(col), f"Column {col} is full"
         self.col_heights[col] += 1
-        self.state_representation[col][self.col_heights[col] - (self.h + 1) * col - 1] = self._players_map[player]
+        self.state_representation[col][self.col_heights[col] - (self.h + 1) * col - 1] = (
+            self._players_map[player]
+        )
         self.board_state[player] |= move
         self.history.append(col)
         self.moves += 1
@@ -133,7 +135,7 @@ class ConnectGameBitboard(Game):
         """
         Returns score of complete game (evaluated for winning opponent)
         """
-        return - (self.w * self.h + 1 - self.moves) // 2
+        return -(self.w * self.h + 1 - self.moves) // 2
 
     def __get_bit_shifts(self):
         """
@@ -143,7 +145,7 @@ class ConnectGameBitboard(Game):
             1,  # | vertical
             self.h,  # \ diagonal
             self.h + 1,  # - horizontal
-            self.h + 2  # / diagonal
+            self.h + 2,  # / diagonal
         ]
 
     def step(self, action: int) -> bool:
@@ -169,7 +171,7 @@ class ConnectGameBitboard(Game):
         """
         return [c for c in range(self.w) if self.can_play(c)]
 
-    def check_winner(self) -> Union[int, None]:
+    def check_winner(self) -> int | None:
         """
         Check if there is a winner.
         Returns:
@@ -192,13 +194,14 @@ class ConnectGameBitboard(Game):
         return copy(self)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     game = ConnectGameBitboard()
 
     is_over = False
     while not is_over:
         print(game)
         import random
+
         action = random.choice(game.get_valid_actions())
         is_over = game.step(action)
 

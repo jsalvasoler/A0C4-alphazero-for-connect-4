@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+
 from src.boards.bitboard import ConnectGameBitboard as Game
 from src.utils import Config
-
 
 configuration = Config()
 
@@ -13,8 +13,9 @@ class ResidualBlock(nn.Module):
     Residual block used in the neural network. Multiple copies of this block are stacked together to
     form the ResNet.
     """
+
     def __init__(self, in_channels, out_channels):
-        super(ResidualBlock, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, stride=1)
         self.bn1 = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU(inplace=True)
@@ -47,13 +48,14 @@ class ResidualBlock(nn.Module):
 
 
 class NeuralNetwork(nn.Module):
+    """AlphaZero neural network.
+
+    Consists of a convolutional layer, residual blocks, and two heads:
+    policy (action probabilities) and value (state evaluation).
     """
-    Neural network used for the AlphaZero algorithm. The network consists of a convolutional layer, multiple
-    residual blocks and two heads. The policy head outputs a vector of probabilities for each action. The value
-    head outputs a single value which is the value of the current state.
-    """
+
     def __init__(self, game: Game):
-        super(NeuralNetwork, self).__init__()
+        super().__init__()
         self.row = game.h
         self.column = game.w
         self.action_size = game.w
@@ -63,7 +65,8 @@ class NeuralNetwork(nn.Module):
         self.relu1 = nn.ReLU(inplace=True)
 
         self.residual_blocks = nn.Sequential(
-            *[ResidualBlock(256, 256) for _ in range(configuration.resnet_blocks)])
+            *[ResidualBlock(256, 256) for _ in range(configuration.resnet_blocks)]
+        )
 
         # Policy head
         self.conv4 = nn.Conv2d(256, 2, kernel_size=1, padding=0)
@@ -76,11 +79,7 @@ class NeuralNetwork(nn.Module):
         self.bn5 = nn.BatchNorm2d(1)
         self.relu5 = nn.ReLU(inplace=True)
         self.fc_v = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(6 * 7, 256),
-            nn.ReLU(inplace=True),
-            nn.Linear(256, 1),
-            nn.Tanh()
+            nn.Flatten(), nn.Linear(6 * 7, 256), nn.ReLU(inplace=True), nn.Linear(256, 1), nn.Tanh()
         )
 
     def forward(self, x):
@@ -127,10 +126,13 @@ class NNWrapper:
         net: a NeuralNetwork object containing the neural network to wrap
         optimizer: An optimizer object used to train the network.
     """
+
     def __init__(self, game):
         self.game = game
         self.net = NeuralNetwork(self.game)
-        self.optimizer = optim.SGD(self.net.parameters(), lr=configuration.learning_rate, momentum=configuration.momentum)
+        self.optimizer = optim.SGD(
+            self.net.parameters(), lr=configuration.learning_rate, momentum=configuration.momentum
+        )
 
     def predict(self, state):
         """
@@ -165,7 +167,9 @@ class NNWrapper:
 
             # Divide epoch into batches.
             for i in range(0, examples_num, configuration.batch_size):
-                states, pis, vs = zip(*training_data[i:i + configuration.batch_size])
+                states, pis, vs = zip(
+                    *training_data[i : i + configuration.batch_size], strict=False
+                )
 
                 states = torch.FloatTensor(states)
                 pis = torch.FloatTensor(pis)
@@ -183,9 +187,9 @@ class NNWrapper:
 
                 # Record pi and v loss to a file.
                 if configuration.record_loss:
-                    file_path = f'{configuration.model_dir_path}/loss.txt'
-                    with open(file_path, 'a') as loss_file:
-                        loss_file.write('%f|%f\n' % (loss_pi.item(), loss_v.item()))
+                    file_path = f"{configuration.model_dir_path}/loss.txt"
+                    with open(file_path, "a") as loss_file:
+                        loss_file.write(f"{loss_pi.item():f}|{loss_v.item():f}\n")
 
         print("\n")
 
@@ -196,7 +200,7 @@ class NNWrapper:
         Args:
             filename: A string representing the name of the file to save the model to.
         """
-        file_path = f'{configuration.model_dir_path}/{filename}.pt'
+        file_path = f"{configuration.model_dir_path}/{filename}.pt"
         print("Saving model:", filename, "at", configuration.model_dir_path)
         torch.save(self.net.state_dict(), file_path)
 
@@ -207,6 +211,6 @@ class NNWrapper:
         Args:
             filename: A string representing the name of the file to load the model from.
         """
-        file_path = f'{configuration.model_dir_path}/{filename}.pt'
+        file_path = f"{configuration.model_dir_path}/{filename}.pt"
         print("Loading model:", filename, "from", configuration.model_dir_path)
         self.net.load_state_dict(torch.load(file_path))
