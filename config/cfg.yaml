@@ -1,7 +1,7 @@
-num_iterations: 1
-num_games: 5
-num_mcts_sims: 10
-c_puct: 1
+num_iterations: 50
+num_games: 100
+num_mcts_sims: 400
+c_puct: 1.5
 l2_val: 0.0001
 momentum: 0.9
 learning_rate: 0.01
@@ -10,10 +10,10 @@ temp_init: 1
 temp_final: 0.001
 temp_thresh: 10
 epochs: 10
-batch_size: 128
-dirichlet_alpha: 0.5
+batch_size: 256
+dirichlet_alpha: 1.0
 epsilon: 0.25
-num_eval_games: 10
+num_eval_games: 20
 eval_win_rate: 0.55
 resnet_blocks: 5
 record_loss: 1

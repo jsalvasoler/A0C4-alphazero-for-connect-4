@@ -106,7 +106,7 @@ class NeuralNetwork(nn.Module):
         pi = self.relu4(pi)
         pi = pi.view(-1, self.row * self.column * 2)
         pi = self.fc_pi(pi)
-        pi = torch.nn.functional.softmax(pi, dim=1)
+        pi = torch.nn.functional.log_softmax(pi, dim=1)
 
         # Value Head
         v = self.conv5(resnet_out)
@@ -131,7 +131,10 @@ class NNWrapper:
         self.game = game
         self.net = NeuralNetwork(self.game)
         self.optimizer = optim.SGD(
-            self.net.parameters(), lr=configuration.learning_rate, momentum=configuration.momentum
+            self.net.parameters(),
+            lr=configuration.learning_rate,
+            momentum=configuration.momentum,
+            weight_decay=configuration.l2_val,
         )
 
     def predict(self, state):
@@ -146,10 +149,14 @@ class NNWrapper:
         """
         state = torch.FloatTensor(state).unsqueeze(0)
 
-        pi, v = self.net(state)
-        pi, v = pi.detach().numpy()[0], v.item()
+        self.net.eval()
+        with torch.no_grad():
+            log_pi, v = self.net(state)
+        self.net.train()
 
-        return pi, v
+        # Return probabilities (not log-probs) for MCTS
+        pi = torch.exp(log_pi).numpy()[0]
+        return pi, v.item()
 
     def train(self, training_data):
         """
@@ -177,8 +184,9 @@ class NNWrapper:
 
                 self.optimizer.zero_grad()
 
-                pi_pred, v_pred = self.net(states)
-                loss_pi = torch.nn.functional.cross_entropy(pi_pred, torch.argmax(pis, dim=1))
+                log_pi_pred, v_pred = self.net(states)
+                # Soft cross-entropy: -sum(target * log_pred) / batch_size
+                loss_pi = -torch.sum(pis * log_pi_pred) / pis.size(0)
                 loss_v = nn.MSELoss()(v_pred.view(-1), vs)
                 total_loss = loss_pi + loss_v
 

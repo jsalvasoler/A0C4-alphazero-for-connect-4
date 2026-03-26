@@ -16,8 +16,8 @@ uv run python -m src.cli play --agent optimal
 uv run python -m src.cli play --agent alpha
 
 # ── Train ────────────────────────────────────────────────────────────
-# Train the AlphaZero neural network (uses config.yaml for parameters)
-uv run python -m src.cli train
+# Train the AlphaZero neural network (uses config/cfg.yaml for parameters)
+uv run python -m src.cli train --config config/cfg_test.yaml
 
 # ── Test / Evaluate ──────────────────────────────────────────────────
 # Pit AlphaZero against the random agent (100 games)

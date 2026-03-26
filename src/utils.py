@@ -99,24 +99,46 @@ class SolverAgent(Agent):
 class Config:
     """
     Configuration object for the project.
+
+    Uses a singleton pattern so all modules share the same config.
+    Call Config.initialize(path) once at startup, then Config() anywhere.
     """
 
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+
     def __init__(self):
-        # Read config from config.yaml.
-        self.__root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self._config_path = os.path.join(self.__root, "config.yaml")
+        if self._initialized:
+            return
+        self._initialized = True
+        self._root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # Default config path
+        self._config_path = os.path.join(self._root, "config", "cfg.yaml")
+        self._config = self._load(self._config_path)
+        self.model_dir_path = os.path.join(self._root, "models")
 
-        with open(self._config_path) as f:
-            self._config = yaml.safe_load(f)
+    @classmethod
+    def initialize(cls, config_path):
+        """Initialize (or reinitialize) the singleton with a specific config file."""
+        instance = cls()
+        instance._config_path = config_path
+        instance._config = instance._load(config_path)
+        return instance
 
-        self.model_dir_path = os.path.join(self.__root, "models")
+    @staticmethod
+    def _load(path):
+        with open(path) as f:
+            return yaml.safe_load(f)
 
     def __getattr__(self, item):
-        # if the item is already an attribute of self, return it
         if item in self.__dict__:
             return self.__dict__[item]
 
-        # if the item exists as a key in self._config, return it
         try:
             return self._config[item]
         except KeyError as err:

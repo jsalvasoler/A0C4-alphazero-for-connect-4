@@ -26,8 +26,8 @@ class ConnectGameBitboard(Game):
         self.bit_shifts = None
         self.base_search_order = None
 
-        # State representation for that serves as the NN input
-        self.state_representation = np.zeros((self.w, self.h), dtype=np.int8)
+        # State representation that serves as the NN input: (rows, cols) = (h, w)
+        self.state_representation = np.zeros((self.h, self.w), dtype=np.int8)
 
         self.reset()
 
@@ -103,9 +103,8 @@ class ConnectGameBitboard(Game):
         move = 1 << self.col_heights[col]
         assert self.can_play(col), f"Column {col} is full"
         self.col_heights[col] += 1
-        self.state_representation[col][self.col_heights[col] - (self.h + 1) * col - 1] = (
-            self._players_map[player]
-        )
+        row = self.col_heights[col] - (self.h + 1) * col - 1
+        self.state_representation[row][col] = self._players_map[player]
         self.board_state[player] |= move
         self.history.append(col)
         self.moves += 1
@@ -120,16 +119,15 @@ class ConnectGameBitboard(Game):
         """
         return self.state_representation * self._players_map[self.get_current_player()]
 
-    def winning_board_state(self):
+    def has_four_in_a_row(self, player):
         """
-        Returns true if last played column creates winning alignment
+        Returns true if the given player has a four-in-a-row alignment.
         """
-        opp = self.get_opponent()
         for shift in self.bit_shifts:
-            test = self.board_state[opp] & (self.board_state[opp] >> shift)
+            test = self.board_state[player] & (self.board_state[player] >> shift)
             if test & (test >> 2 * shift):
                 return True
-        return False if self.moves < self.w * self.h else True
+        return False
 
     def get_score(self):
         """
@@ -180,10 +178,12 @@ class ConnectGameBitboard(Game):
             0 if there is a draw,
             None if game is not over.
         """
-        if self.winning_board_state():
-            if self.moves == self.w * self.h:
-                return 0
-            return self._players_map[self.get_opponent()]
+        # The last player to move is get_opponent() (since moves was incremented)
+        last_player = self.get_opponent()
+        if self.has_four_in_a_row(last_player):
+            return self._players_map[last_player]
+        if self.moves >= self.w * self.h:
+            return 0
         return None
 
     def clone(self):

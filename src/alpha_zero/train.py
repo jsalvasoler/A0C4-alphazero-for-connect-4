@@ -96,14 +96,17 @@ class Train:
         while not game_over:
             # MCTS simulations to get the best child node.
             if turn < configuration.temp_thresh:
-                best_child = mcts.search(game, node, configuration.temp_init)
+                temperature = configuration.temp_init
             else:
-                best_child = mcts.search(game, node, configuration.temp_final)
+                temperature = configuration.temp_final
 
-            # Store state, prob and v for training.
-            self_play_data.append(
-                [game.get_state_representation().copy(), best_child.parent.child_psas, 0]
-            )
+            best_child = mcts.search(game, node, temperature)
+
+            # Get MCTS-improved policy from visit counts (the real training signal)
+            policy = mcts.get_policy(temperature)
+
+            # Store state, MCTS policy and placeholder value for training.
+            self_play_data.append([game.get_state_representation().copy(), policy, 0])
 
             action = best_child.action
             game_over = game.step(action)  # Play the child node's action.
@@ -114,9 +117,19 @@ class Train:
             best_child.parent = None
             node = best_child  # Make the child node the root node.
 
-        # Update v as the value of the game result.
-        for game_state in self_play_data:
-            game_state[2] = -value
+        # Update v as the value of the game result, alternating sign per player.
+        # The last state's player just moved and caused game_over.
+        # value is from the perspective of player 0 (+1 = p0 wins, -1 = p1 wins).
+        # We need each state's value from the perspective of the player whose turn it was.
+        for i, game_state in enumerate(reversed(self_play_data)):
+            # Last state (i=0): the player who moved caused the result.
+            # The value for the player who just moved (and won/lost) should be +value
+            # for the winner's turn, -value for the loser's turn.
+            # Since turns alternate, we flip sign each step back.
+            if i % 2 == 0:
+                game_state[2] = value
+            else:
+                game_state[2] = -value
             training_data.append(game_state)
 
         # Print statistics of the MCTS

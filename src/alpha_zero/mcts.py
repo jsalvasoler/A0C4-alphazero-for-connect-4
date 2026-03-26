@@ -62,24 +62,23 @@ class TreeNode:
 
         Args:
             game: An object containing the game state.
-            psa_vector: A list containing move probabilities for each move.
+            psa_vector: A list containing move probabilities for each column (length = action_size).
         """
-        self.child_psas = psa_vector.copy()
+        self.child_psas = psa_vector
         valid_moves = game.get_valid_actions()
-        for idx, move in enumerate(valid_moves):
-            child_node = TreeNode(parent=self, action=move, psa=psa_vector[idx])
+        for move in valid_moves:
+            child_node = TreeNode(parent=self, action=move, psa=psa_vector[move])
             self.children.append(child_node)
 
-    def back_prop(self, wsa, v):
+    def back_prop(self, v):
         """
-        Update the current node's statistics based on the game outcome.
+        Update the current node's statistics based on the evaluation.
 
         Args:
-            wsa: A float representing the action value for this state.
-            v: A float representing the network value of this state.
+            v: A float representing the value of this state for the current player.
         """
         self.Nsa += 1
-        self.Wsa = wsa + v
+        self.Wsa += v
         self.Qsa = self.Wsa / self.Nsa
 
 
@@ -124,8 +123,27 @@ class MonteCarloTreeSearch:
                 node = node.select_child()
                 game.step(node.action)
 
+            # Check if this leaf is a terminal state
+            winner = game.check_winner()
+            if winner is not None:
+                # Terminal node: use actual game outcome, don't expand
+                v = winner
+                # Back propagate from terminal node up to root
+                while node is not None:
+                    v = -v
+                    node.back_prop(v)
+                    node = node.parent
+                continue
+
             # Get move probabilities and values from the network for this state.
             psa_vector, v = self.net.predict(game.get_state_representation())
+
+            # Mask invalid moves and renormalize
+            valid_moves = game.get_valid_actions()
+            mask = np.zeros(len(psa_vector))
+            for move in valid_moves:
+                mask[move] = 1.0
+            psa_vector = psa_vector * mask
 
             # Add Dirichlet noise to the psa_vector of the root node.
             if node.parent is None:
@@ -136,33 +154,60 @@ class MonteCarloTreeSearch:
             # Normalize psa vector
             if psa_vector_sum > 0:
                 psa_vector /= psa_vector_sum
+            else:
+                # Fallback: uniform over valid moves
+                for move in valid_moves:
+                    psa_vector[move] = 1.0 / len(valid_moves)
 
-            # Try expanding the current node.
+            # Expand the current node.
             node.expand_node(game=game, psa_vector=psa_vector)
-
-            wsa = game.check_winner()
-            if wsa is None:
-                wsa = 0
 
             # Back propagate node statistics up to the root node.
             while node is not None:
-                wsa = -wsa
                 v = -v
-                node.back_prop(wsa, v)
+                node.back_prop(v)
                 node = node.parent
 
-        highest_nsa = 0
-        highest_index = 0
+        # Select child based on temperature
+        if temperature < 1:
+            # Deterministic: pick most-visited child
+            best_child = max(self.root.children, key=lambda c: c.Nsa)
+        else:
+            # Proportional to visit counts
+            visits = np.array([c.Nsa for c in self.root.children], dtype=np.float64)
+            visits /= visits.sum()
+            best_child = self.root.children[np.random.choice(len(self.root.children), p=visits)]
 
-        # Select the child's move using a temperature parameter.
-        for idx, child in enumerate(self.root.children):
-            temperature_exponent = int(1 / temperature)
+        return best_child
 
-            if child.Nsa**temperature_exponent > highest_nsa:
-                highest_nsa = child.Nsa**temperature_exponent
-                highest_index = idx
+    def get_policy(self, temperature):
+        """
+        Get the MCTS-improved policy (visit count distribution) from the root node.
 
-        return self.root.children[highest_index]
+        Args:
+            temperature: A float to control exploration vs exploitation.
+
+        Returns:
+            A numpy array of length action_size with the visit count policy.
+        """
+        action_size = self.game.w
+        policy = np.zeros(action_size)
+
+        for child in self.root.children:
+            policy[child.action] = child.Nsa
+
+        if temperature < 1:
+            # Near-deterministic: all weight on most-visited action
+            best = np.argmax(policy)
+            policy = np.zeros(action_size)
+            policy[best] = 1.0
+        else:
+            # temperature == 1: proportional to visit counts (no exponent needed)
+            policy_sum = np.sum(policy)
+            if policy_sum > 0:
+                policy /= policy_sum
+
+        return policy
 
     @staticmethod
     def add_dirichlet_noise(game, psa_vector):

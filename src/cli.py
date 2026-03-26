@@ -42,6 +42,10 @@ def cmd_train(args):
     from src.alpha_zero.neural_net import NNWrapper
     from src.alpha_zero.train import Train
     from src.boards.bitboard import ConnectGameBitboard as Game
+    from src.utils import Config
+
+    if args.config:
+        Config.initialize(args.config)
 
     game = Game()
     net = NNWrapper(game)
@@ -72,7 +76,10 @@ def main():
     )
 
     # train
-    subparsers.add_parser("train", help="Train the AlphaZero neural network")
+    train_parser = subparsers.add_parser("train", help="Train the AlphaZero neural network")
+    train_parser.add_argument(
+        "--config", type=str, default=None, help="Path to config YAML (default: config/cfg.yaml)"
+    )
 
     # test
     test_parser = subparsers.add_parser("test", help="Pit two agents against each other")

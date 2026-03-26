@@ -21,7 +21,7 @@ class Evaluate:
     def evaluate(self):
         """
         Play self-play games between the two networks and record game stats.
-
+        Alternates which network plays first to avoid first-mover bias.
 
         Returns:
             Wins and losses count from the perspective of the current network.
@@ -38,12 +38,15 @@ class Evaluate:
             value = 0
             node = TreeNode()
 
+            # Alternate which network goes first each game
+            current_plays_first = i % 2 == 0
+
             # Keep playing until the game is in a terminal state.
             while not game_over:
-                # MCTS simulations to get the best child node.
-                # If player_to_eval is 1 play using the current network
-                # Else play using the evaluation network.
-                if game.get_current_player() == 1:
+                # Determine which MCTS to use for the current player
+                is_current_turn = (game.get_current_player() == 0) == current_plays_first
+
+                if is_current_turn:
                     best_child = self.current_mcts.search(game, node, configuration.temp_final)
                 else:
                     best_child = self.eval_mcts.search(game, node, configuration.temp_final)
@@ -59,10 +62,17 @@ class Evaluate:
                 best_child.parent = None
                 node = best_child  # Make the child node the root node.
 
-            if value == 1:
+            # Map game result to current network's perspective
+            # value: +1 = player 0 wins, -1 = player 1 wins, 0 = draw
+            if current_plays_first:
+                current_value = value  # current is player 0
+            else:
+                current_value = -value  # current is player 1
+
+            if current_value == 1:
                 print("win")
                 wins += 1
-            elif value == -1:
+            elif current_value == -1:
                 print("loss")
                 losses += 1
             else:
