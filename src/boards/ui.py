@@ -60,22 +60,22 @@ class UI:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     mouseX = event.pos[0]
                     col = mouseX // self.CELL_SIZE
-                    if not board.can_play(col):
+                    if not self.board.can_play(col):
                         continue
                     priors = None
                     # Find the first available row in the selected column
-                    is_over = board.step(col)
+                    is_over = self.board.step(col)
                     print(f"Column: {col} is played")
-                    print(board)
+                    print(self.board)
                     print("is_over:", is_over)
 
             # Draw the board
             self.screen.fill(self.BG_COLOR)
-            self.draw_board(board, not is_over, priors)
+            self.draw_board(self.board, not is_over, priors)
 
             if is_over:
                 text = self.font.render(
-                    f"{ {1: 'Red', -1: 'Blue'}.get(board.check_winner()) } wins!",
+                    f"{ {1: 'Red', -1: 'Blue'}.get(self.board.check_winner()) } wins!",
                     True,
                     self.FONT_COLOR,
                 )
